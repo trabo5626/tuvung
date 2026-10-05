@@ -30,10 +30,15 @@ h1{font-size:18px;margin:4px 0}
 <body>
 <div id="ds"></div>
 <script>
-var API = "https://script.google.com/macros/s/AKfycbwtEepJ0Eybj74Cq9aF8ZuyAlC5_lcs_ggxH1twuJOluJ0ZAJqPoBG8vJdbV2zUmY-6/exec";
+// TỰ ĐỘNG PHÁT HIỆN LINK API TỪ BOT TRUYỀN SANG ĐỂ TRÁNH LỖI MẠNG
+var qs = new URLSearchParams(location.search);
+var linkGoc = "https://script.google.com/macros/s/AKfycbwtEepJ0Eybj74Cq9aF8ZuyAlC5_lcs_ggxH1twuJOluJ0ZAJqPoBG8vJdbV2zUmY-6/exec";
+var API = qs.get("tgWebAppStartParam") || linkGoc;
+if (API.indexOf("http") !== 0) {
+  API = "https://script.google.com/macros/s/" + API + "/exec";
+}
 
 var ds = document.getElementById("ds");
-var qs = new URLSearchParams(location.search);
 var M = qs.get("m") || "hoc";
 var LOP = qs.get("lop") || "";
 var TU = Number(qs.get("tu") || 0);
@@ -49,7 +54,15 @@ function e(tag, cls, txt) {
 }
 
 if (window.Telegram && Telegram.WebApp) {
-  try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch (x) {}
+  try { 
+    Telegram.WebApp.ready(); 
+    Telegram.WebApp.expand();
+    // Lấy link chuẩn từ Telegram WebApp nếu có
+    if (Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.start_param) {
+      var sp = Telegram.WebApp.initDataUnsafe.start_param;
+      if (sp.indexOf("AKfycb") === 0) API = "https://script.google.com/macros/s/" + sp + "/exec";
+    }
+  } catch (x) {}
 }
 
 function api(p) {
@@ -259,7 +272,7 @@ function trangKT() {
   });
 }
 
-if (M === "kt") { trangKT(); } else { trangHoc(); }
+if (M === "kt") trangKT(); else trangHoc();
 </script>
 </body>
 </html>
