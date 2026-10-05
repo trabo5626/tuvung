@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Từ vựng</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+body{font-family:sans-serif;margin:0;padding:10px;background:#fff;color:#111}
+h1{font-size:18px;margin:4px 0}
+.sub{font-size:14px;margin-bottom:10px;color:#333}
+.r{display:grid;grid-template-columns:44px 1fr 52px;align-items:center;padding:10px 4px;border-bottom:1px solid #ddd;cursor:pointer}
+.r:active{background:#e8f0fe}
+.s{font-size:16px;color:#555}
+.t{font-size:20px;font-weight:700}
+.p{font-size:15px;color:#666;font-weight:400}
+.b{font-size:24px;text-align:center}
+.n{grid-column:2 / 4;font-size:16px;color:#333;margin-top:2px}
+.top{display:flex;justify-content:space-between;font-size:14px;color:#555}
+.so{font-size:22px;font-weight:700;text-align:center;margin:8px 0 2px}
+.hd{font-size:14px;color:#555;text-align:center}
+.loa{font-size:52px;width:96px;height:96px;line-height:96px;background:#e8f0fe;border-radius:50%;margin:10px auto;text-align:center;cursor:pointer}
+.o{display:block;width:100%;box-sizing:border-box;text-align:left;font-size:20px;padding:14px;margin:8px 0;border:2px solid #ccc;border-radius:10px;background:#fff;color:#111}
+.o.dung{background:#d9f2dd;border-color:#2e9e4f}
+.o.sai{background:#fde8e8;border-color:#d33}
+.giai{font-size:16px;color:#333;margin:10px 0;text-align:center}
+.tiep{display:block;width:100%;box-sizing:border-box;font-size:18px;padding:14px;margin-top:12px;border:0;border-radius:10px;background:#2481cc;color:#fff}
+</style>
+</head>
+<body>
+<div id="ds"></div>
+<script>
+var API = "https://script.google.com/macros/s/AKfycbyQf4feZJJuOge_vz9lRWmg7pSqGAj5ffSXTKYGWDNu_MFXHofqu-O2ZFJecQa6GxwH/exec";
+
+var ds = document.getElementById("ds");
+var qs = new URLSearchParams(location.search);
+var M = qs.get("m") || "hoc";
+var LOP = qs.get("lop") || "";
+var TU = Number(qs.get("tu") || 0);
+var DEN = Number(qs.get("den") || 0);
+var C = qs.get("c") || "";
+var N = qs.get("n") || "";
+
+function e(tag, cls, txt) {
+  var x = document.createElement(tag);
+  if (cls) x.className = cls;
+  if (txt !== undefined) x.textContent = txt;
+  return x;
+}
+
+if (window.Telegram && Telegram.WebApp) {
+  try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch (x) {}
+}
+
+function api(p) {
+  return fetch(API + "?" + new URLSearchParams(p).toString()).then(function (r) { return r.json(); });
+}
+
+var am = {};
+var dangTai = {};
+var choPhat = null;
+var mo = false;
+var player = new Audio();
+
+function noi(t) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  var u = new SpeechSynthesisUtterance(t);
+  u.lang = "en-US";
+  u.rate = 0.9;
+  window.speechSynthesis.speak(u);
+}
+
+function mokhoa() {
+  if (mo) return;
+  mo = true;
+  player.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+  var p = player.play();
+  if (p && p.catch) p.catch(function () {});
+}
+
+function xong(t, b) {
+  am[t] = b || "";
+  var cs = dangTai[t] || [];
+  delete dangTai[t];
+  cs.forEach(function (f) { f(); });
+}
+
+function taiAm(t, cb) {
+  if (am[t] !== undefined) { if (cb) cb(); return; }
+  if (dangTai[t]) { if (cb) dangTai[t].push(cb); return; }
+  dangTai[t] = cb ? [cb] : [];
+  api({ a: "am", t: t })
+    .then(function (r) { xong(t, r && r.b); })
+    .catch(function () { xong(t, ""); });
+}
+
+function phatNgay(t, td) {
+  var b = am[t];
+  if (!b) { if (!td) noi(t); return; }
+  player.pause();
+  player.src = "data:audio/mpeg;base64," + b;
+  var p = player.play();
+  if (p && p.catch) p.catch(function () { if (!td) noi(t); });
+}
+
+function bam(t, td) {
+  mokhoa();
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  player.pause();
+  choPhat = t;
+  if (am[t] !== undefined) { phatNgay(t, td); return; }
+  taiAm(t, function () { if (choPhat === t) phatNgay(t, td); });
+}
+
+function tai3(dsT) {
+  var dem = 0;
+  function tai() {
+    if (dem >= dsT.length) return;
+    var t = dsT[dem++];
+    taiAm(t, tai);
+  }
+  tai(); tai(); tai();
+}
+
+function trangHoc() {
+  ds.appendChild(e("h1", "", "TỪ VỰNG BẠN MUỐN HỌC HÔM NAY"));
+  ds.appendChild(e("div", "sub", "(học từ số " + TU + " đến số " + DEN + ", bấm loa để phát âm)"));
+  var dang = e("div", "sub", "Đang tải danh sách từ...");
+  ds.appendChild(dang);
+  api({ a: "hoc", lop: LOP, tu: TU, den: DEN }).then(function (r) {
+    ds.removeChild(dang);
+    if (!r || !r.ok || !r.words || !r.words.length) {
+      ds.appendChild(e("div", "sub", (r && r.loi) || "Không có từ nào để hiển thị."));
+      return;
+    }
+    r.words.forEach(function (w) {
+      var row = e("div", "r");
+      row.appendChild(e("div", "s", String(w.s)));
+      var tw = e("div", "t", w.t);
+      if (w.p) tw.appendChild(e("span", "p", " (" + w.p + ")"));
+      row.appendChild(tw);
+      row.appendChild(e("div", "b", "🔊"));
+      row.appendChild(e("div", "n", w.n));
+      row.onclick = function () { bam(w.t); };
+      ds.appendChild(row);
+    });
+    tai3(r.words.map(function (w) { return w.t; }));
+  }).catch(function () {
+    dang.textContent = "Không tải được dữ liệu. Hãy kiểm tra mạng rồi mở lại.";
+  });
+}
+
+var Q = [];
+var i = 0;
+var dung = 0;
+var daTra = false;
+var btns = [];
+
+function hien() {
+  var q = Q[i];
+  daTra = false;
+  btns = [];
+  ds.textContent = "";
+  ds.appendChild(e("div", "top", "Câu " + (i + 1) + "/" + Q.length + " - Đúng: " + dung));
+  ds.appendChild(e("div", "so", "Số thứ tự: " + q.s));
+  ds.appendChild(e("div", "hd", q.l === "nghe" ? "Bấm loa, chọn từ tiếng Anh bạn nghe được" : "Bấm loa, chọn nghĩa tiếng Việt đúng"));
+  var lo = e("div", "loa", "🔊");
+  lo.onclick = function () { bam(q.t); };
+  ds.appendChild(lo);
+  q.o.forEach(function (o, k) {
+    var b = e("button", "o", q.l === "nghe" ? o.t : o.n);
+    b.onclick = function () { chon(k); };
+    btns.push(b);
+    ds.appendChild(b);
+  });
+}
+
+function chon(k) {
+  if (daTra) return;
+  daTra = true;
+  var q = Q[i];
+  if (k === q.a) {
+    dung++;
+    btns[k].className = "o dung";
+  } else {
+    btns[k].className = "o sai";
+    btns[q.a].className = "o dung";
+  }
+  ds.appendChild(e("div", "giai", q.t + " = " + q.n));
+  var nx = e("button", "tiep", i === Q.length - 1 ? "Xem kết quả" : "Tiếp theo");
+  nx.onclick = function () {
+    i++;
+    if (i < Q.length) { hien(); bam(Q[i].t, true); } else { ketThuc(); }
+  };
+  ds.appendChild(nx);
+}
+
+function dong() {
+  if (window.Telegram && Telegram.WebApp) Telegram.WebApp.close();
+}
+
+function nutDong() {
+  var b = e("button", "tiep", "Đóng");
+  b.onclick = dong;
+  return b;
+}
+
+function gui(tt, bt) {
+  api({ a: "nop", c: C, n: N, lop: LOP, tu: TU, den: DEN, d: dung, g: Q.length }).then(function (r) {
+    if (r && r.ok) {
+      tt.textContent = "Đã gửi kết quả. Bot sẽ nhắn báo cáo trong khung chat.";
+      bt.style.display = "none";
+      ds.appendChild(nutDong());
+    } else {
+      tt.textContent = (r && r.loi) || "Không gửi được kết quả.";
+      bt.style.display = "block";
+    }
+  }).catch(function () {
+    tt.textContent = "Không gửi được kết quả. Hãy kiểm tra mạng rồi bấm Gửi lại.";
+    bt.style.display = "block";
+  });
+}
+
+function ketThuc() {
+  ds.textContent = "";
+  ds.appendChild(e("div", "so", "Kết quả: " + dung + "/" + Q.length));
+  var tt = e("div", "giai", "Đang gửi kết quả cho bot...");
+  ds.appendChild(tt);
+  var bt = e("button", "tiep", "Gửi lại");
+  bt.style.display = "none";
+  bt.onclick = function () {
+    bt.style.display = "none";
+    tt.textContent = "Đang gửi lại...";
+    gui(tt, bt);
+  };
+  ds.appendChild(bt);
+  gui(tt, bt);
+}
+
+function trangKT() {
+  var dang = e("div", "sub", "Đang tải bài kiểm tra...");
+  ds.appendChild(dang);
+  api({ a: "kt", lop: LOP, tu: TU, den: DEN, c: C, n: N }).then(function (r) {
+    ds.textContent = "";
+    if (!r || !r.ok) {
+      ds.appendChild(e("div", "sub", (r && r.loi) || "Không tải được bài kiểm tra."));
+      return;
+    }
+    Q = r.cau || [];
+    if (!Q.length) {
+      ds.appendChild(e("div", "sub", "Không có từ nào để kiểm tra."));
+      return;
+    }
+    hien();
+    tai3(Q.map(function (q) { return q.t; }));
+  }).catch(function () {
+    dang.textContent = "Không tải được dữ liệu. Hãy kiểm tra mạng rồi mở lại.";
+  });
+}
+
+if (M === "kt") { trangKT(); } else { trangHoc(); }
+</script>
+</body>
+</html>
