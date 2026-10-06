@@ -240,7 +240,7 @@ function gui(tt, bt) {
       bt.style.display = "block";
     }
   }).catch(function (err) {
-    tt.textContent = "Không gửi được kết quả (" + err + "). Hãy bấm Gửi lại.";
+    tt.textContent = "Không gửi được kết quả (" + err + ") [c=" + C.length + ", n=" + N.length + ", m=" + M + "]. Hãy bấm Gửi lại.";
     bt.style.display = "block";
   });
 }
