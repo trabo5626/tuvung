@@ -54,7 +54,11 @@ if (window.Telegram && Telegram.WebApp) {
 
 function api(p, tries) {
   tries = tries || 3;
-  var url = API + "?" + new URLSearchParams(p).toString();
+  var q = new URLSearchParams();
+Object.keys(p).forEach(function (k) {
+  if (p[k] !== "" && p[k] !== undefined && p[k] !== null) q.append(k, p[k]);
+});
+var url = API + "?" + q.toString();
   return fetch(url, { credentials: "omit" })
     .then(function (r) {
       return r.text().then(function (t) {
