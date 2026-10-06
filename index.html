@@ -311,6 +311,26 @@ function taoDe(words) {
   function trangKT() {
   var dang = e("div", "sub", "Đang tải bài kiểm tra...");
   ds.appendChild(dang);
+  api({ a: "hoc", lop: LOP, tu: 1, den: 999999 }).then(function (r) {
+    ds.textContent = "";
+    if (!r || !r.ok || !r.words || !r.words.length) {
+      ds.appendChild(e("div", "sub", (r && r.loi) || "Không tải được bài kiểm tra."));
+      return;
+    }
+    Q = taoDe(r.words);
+    if (!Q.length) {
+      ds.appendChild(e("div", "sub", "Không có từ nào để kiểm tra."));
+      return;
+    }
+    hien();
+    tai3(Q.map(function (q) { return q.t; }));
+  }).catch(function (err) {
+    baoLoi(dang, err);
+  });
+}
+  function trangKTCu() {
+  var dang = e("div", "sub", "Đang tải bài kiểm tra...");
+  ds.appendChild(dang);
   api({ a: "kt", lop: LOP, tu: TU, den: DEN, c: C, n: N }).then(function (r) {
     ds.textContent = "";
     if (!r || !r.ok) {
