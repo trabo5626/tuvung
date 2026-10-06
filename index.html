@@ -55,7 +55,7 @@ if (window.Telegram && Telegram.WebApp) {
 function api(p, tries) {
   tries = tries || 3;
   var url = API + "?" + new URLSearchParams(p).toString();
-  return fetch(url, { cache: "no-store", credentials: "omit" })
+  return fetch(url, { credentials: "omit" })
     .then(function (r) {
       return r.text().then(function (t) {
         try {
