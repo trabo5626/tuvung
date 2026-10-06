@@ -30,15 +30,10 @@ h1{font-size:18px;margin:4px 0}
 <body>
 <div id="ds"></div>
 <script>
-// TỰ ĐỘNG PHÁT HIỆN LINK API TỪ BOT TRUYỀN SANG ĐỂ TRÁNH LỖI MẠNG
-var qs = new URLSearchParams(location.search);
-var linkGoc = "https://script.google.com/macros/s/AKfycbwtEepJ0Eybj74Cq9aF8ZuyAlC5_lcs_ggxH1twuJOluJ0ZAJqPoBG8vJdbV2zUmY-6/exec";
-var API = qs.get("tgWebAppStartParam") || linkGoc;
-if (API.indexOf("http") !== 0) {
-  API = "https://script.google.com/macros/s/" + API + "/exec";
-}
+var API = "https://script.google.com/macros/s/AKfycbwtEepJ0Eybj74Cq9aF8ZuyAlC5_lcs_ggxH1twuJOluJ0ZAJqPoBG8vJdbV2zUmY-6/exec";
 
 var ds = document.getElementById("ds");
+var qs = new URLSearchParams(location.search);
 var M = qs.get("m") || "hoc";
 var LOP = qs.get("lop") || "";
 var TU = Number(qs.get("tu") || 0);
@@ -54,19 +49,34 @@ function e(tag, cls, txt) {
 }
 
 if (window.Telegram && Telegram.WebApp) {
-  try { 
-    Telegram.WebApp.ready(); 
-    Telegram.WebApp.expand();
-    // Lấy link chuẩn từ Telegram WebApp nếu có
-    if (Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.start_param) {
-      var sp = Telegram.WebApp.initDataUnsafe.start_param;
-      if (sp.indexOf("AKfycb") === 0) API = "https://script.google.com/macros/s/" + sp + "/exec";
-    }
-  } catch (x) {}
+  try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch (x) {}
 }
 
-function api(p) {
-  return fetch(API + "?" + new URLSearchParams(p).toString()).then(function (r) { return r.json(); });
+function api(p, tries) {
+  tries = tries || 3;
+  var url = API + "?" + new URLSearchParams(p).toString();
+  return fetch(url, { cache: "no-store", credentials: "omit" })
+    .then(function (r) {
+      return r.text().then(function (t) {
+        try {
+          return JSON.parse(t);
+        } catch (x) {
+          throw new Error("HTTP " + r.status + ", khong phai du lieu: " + t.substring(0, 80));
+        }
+      });
+    })
+    .catch(function (err) {
+      if (tries > 1) {
+        return new Promise(function (ok) { setTimeout(ok, 1500); })
+          .then(function () { return api(p, tries - 1); });
+      }
+      throw err;
+    });
+}
+
+function baoLoi(dang, err) {
+  if (dang && dang.parentNode) dang.parentNode.removeChild(dang);
+  ds.appendChild(e("div", "sub", "Không tải được dữ liệu (" + err + "). Hãy mở lại bài từ khung chat."));
 }
 
 var am = {};
@@ -159,8 +169,8 @@ function trangHoc() {
       ds.appendChild(row);
     });
     tai3(r.words.map(function (w) { return w.t; }));
-  }).catch(function () {
-    dang.textContent = "Không tải được dữ liệu. Hãy kiểm tra mạng rồi mở lại.";
+  }).catch(function (err) {
+    baoLoi(dang, err);
   });
 }
 
@@ -220,7 +230,7 @@ function nutDong() {
 }
 
 function gui(tt, bt) {
-  api({ a: "nop", c: C, n: N, lop: LOP, tu: TU, den: DEN, d: dung, g: Q.length }).then(function (r) {
+  api({ a: "nop", c: C, n: N, lop: LOP, tu: TU, den: DEN, d: dung, g: Q.length }, 1).then(function (r) {
     if (r && r.ok) {
       tt.textContent = "Đã gửi kết quả. Bot sẽ nhắn báo cáo trong khung chat.";
       bt.style.display = "none";
@@ -229,8 +239,8 @@ function gui(tt, bt) {
       tt.textContent = (r && r.loi) || "Không gửi được kết quả.";
       bt.style.display = "block";
     }
-  }).catch(function () {
-    tt.textContent = "Không gửi được kết quả. Hãy kiểm tra mạng rồi bấm Gửi lại.";
+  }).catch(function (err) {
+    tt.textContent = "Không gửi được kết quả (" + err + "). Hãy bấm Gửi lại.";
     bt.style.display = "block";
   });
 }
@@ -267,12 +277,18 @@ function trangKT() {
     }
     hien();
     tai3(Q.map(function (q) { return q.t; }));
-  }).catch(function () {
-    dang.textContent = "Không tải được dữ liệu. Hãy kiểm tra mạng rồi mở lại.";
+  }).catch(function (err) {
+    baoLoi(dang, err);
   });
 }
 
-if (M === "kt") trangKT(); else trangHoc();
+if (API === "XXXXXX") {
+  ds.textContent = "Chưa dán địa chỉ Apps Script vào dòng var API trong file index.html.";
+} else if (M === "kt") {
+  trangKT();
+} else {
+  trangHoc();
+}
 </script>
 </body>
 </html>
