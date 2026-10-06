@@ -261,7 +261,54 @@ function ketThuc() {
   gui(tt, bt);
 }
 
-function trangKT() {
+function giongNhau(a, b) {
+  a = a.toLowerCase();
+  b = b.toLowerCase();
+  var p = 0;
+  while (p < a.length && p < b.length && a[p] === b[p]) p++;
+  var s = 0;
+  while (s < a.length && s < b.length && a[a.length - 1 - s] === b[b.length - 1 - s]) s++;
+  return p * 2 + s - Math.abs(a.length - b.length) * 0.5;
+}
+
+function tron(arr) {
+  for (var j = arr.length - 1; j > 0; j--) {
+    var k = Math.floor(Math.random() * (j + 1));
+    var t = arr[j]; arr[j] = arr[k]; arr[k] = t;
+  }
+  return arr;
+}
+
+function taoDe(words) {
+  var tatCa = words.filter(function (w) { return w.t && w.n; });
+  var trongBai = tron(tatCa.filter(function (w) { return w.s >= TU && w.s <= DEN; }));
+  return trongBai.map(function (w, idx) {
+    var cd = [];
+    tatCa.forEach(function (x) {
+      if (x.s === w.s) return;
+      if (x.t.toLowerCase() === w.t.toLowerCase() || x.n === w.n) return;
+      cd.push({ x: x, d: giongNhau(w.t, x.t) + Math.random() });
+    });
+    cd.sort(function (p, q) { return q.d - p.d; });
+    var top = tron(cd.slice(0, 10));
+    var dap = [w];
+    for (var k = 0; k < top.length && dap.length < 4; k++) {
+      var x = top[k].x;
+      var trung = dap.some(function (y) {
+        return y.t.toLowerCase() === x.t.toLowerCase() || y.n === x.n;
+      });
+      if (!trung) dap.push(x);
+    }
+    tron(dap);
+    return {
+      s: w.s, t: w.t, n: w.n,
+      l: (idx % 2 === 0) ? "nghe" : "nghia",
+      o: dap.map(function (y) { return { t: y.t, n: y.n }; }),
+      a: dap.indexOf(w)
+    };
+  });
+}
+  function trangKT() {
   var dang = e("div", "sub", "Đang tải bài kiểm tra...");
   ds.appendChild(dang);
   api({ a: "kt", lop: LOP, tu: TU, den: DEN, c: C, n: N }).then(function (r) {
